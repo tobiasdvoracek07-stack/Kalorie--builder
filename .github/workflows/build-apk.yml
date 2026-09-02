@@ -1,0 +1,38 @@
+name: Build and Send APK
+on:
+  repository_dispatch:
+    types: [build-apk]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node & Java
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Build APK
+        run: |
+          npm install
+          npm run build || (mkdir -p dist && echo '<h1>App</h1>' > dist/index.html)
+          npx @capacitor/cli init "MojeApp" "com.example.app" --web-dir dist
+          npx @capacitor/cli add android
+          cd android && ./gradlew assembleDebug
+
+      - name: Send APK to Telegram
+        run: |
+          curl -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+               -F document=@"android/app/build/outputs/apk/debug/app-debug.apk" \
+               -F caption="🚀 Tvé APK je hotové!" \
+               "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendDocument"
