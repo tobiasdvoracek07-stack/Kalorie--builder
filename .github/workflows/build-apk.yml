@@ -11,10 +11,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Node & Java
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -22,13 +22,35 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Build APK
+      - name: Build Android APK
         run: |
-          npm install
-          npm run build || (mkdir -p dist && echo '<h1>App</h1>' > dist/index.html)
-          npx @capacitor/cli init "MojeApp" "com.example.app" --web-dir dist
-          npx @capacitor/cli add android
-          cd android && ./gradlew assembleDebug
+          if [ ! -f package.json ]; then
+            npm init -y
+          fi
+
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+
+          mkdir -p www
+          cat << 'EOF' > www/index.html
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Moje Appka</title>
+          </head>
+          <body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;background:#111;color:#fff;">
+            <h1>Aplikace funguje! 🚀</h1>
+          </body>
+          </html>
+          EOF
+
+          npx cap init "KalorieApp" "com.kalorie.app" --web-dir www
+          npx cap add android
+
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Send APK to Telegram
         run: |
