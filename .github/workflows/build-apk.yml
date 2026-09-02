@@ -22,6 +22,9 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Build Android APK
         run: |
           if [ ! -f package.json ]; then
@@ -45,8 +48,9 @@ jobs:
           </html>
           EOF
 
-          npx cap init "KalorieApp" "com.kalorie.app" --web-dir www
+          npx cap init KalorieApp com.kalorie.app --web-dir www
           npx cap add android
+          npx cap sync android
 
           cd android
           chmod +x gradlew
