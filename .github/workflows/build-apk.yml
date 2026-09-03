@@ -28,8 +28,8 @@ jobs:
             npm init -y
           fi
 
-          npm install @capacitor/core @capacitor/android
-          npm install -D @capacitor/cli
+          npm install @capacitor/core@6 @capacitor/android@6
+          npm install -D @capacitor/cli@6
 
           mkdir -p www
           cat << 'EOF' > www/index.html
@@ -52,7 +52,7 @@ jobs:
 
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Send APK to Telegram
         run: |
