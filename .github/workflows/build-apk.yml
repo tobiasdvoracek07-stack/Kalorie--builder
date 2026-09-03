@@ -19,11 +19,8 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: Build Android APK
         run: |
@@ -31,7 +28,8 @@ jobs:
             npm init -y
           fi
 
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core @capacitor/android
+          npm install -D @capacitor/cli
 
           mkdir -p www
           cat << 'EOF' > www/index.html
@@ -54,7 +52,7 @@ jobs:
 
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
       - name: Send APK to Telegram
         run: |
