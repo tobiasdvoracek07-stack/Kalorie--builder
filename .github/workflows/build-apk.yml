@@ -3,6 +3,11 @@ on:
   repository_dispatch:
     types: [build-apk]
   workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'Zadání pro aplikaci (co má AI vytvořit)'
+        required: true
+        default: 'Vytvoř jednoduchou kalkulačku kalorií s tmavým designem'
 
 jobs:
   build:
@@ -22,6 +27,49 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Generate Code via AI (Gemini)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PROMPT: ${{ github.event.inputs.prompt || github.event.client_payload.prompt || 'Vytvoř jednoduchou aplikaci s počítadlem' }}
+        run: |
+          mkdir -p www
+          node -e '
+          const fs = require("fs");
+          const apiKey = process.env.GEMINI_API_KEY;
+          const promptText = process.env.PROMPT;
+
+          if (!apiKey) {
+            console.error("Chybí GEMINI_API_KEY v Secrets!");
+            process.exit(1);
+          }
+
+          const systemPrompt = "Jsi špičkový mobilní vývojář. Vytvoř kompletní jednosouborovou HTML/JS/CSS webovou aplikaci podle zadání uživatele. Kód musí být plně funkční, moderní, s pěkným designem. Vracej POUZE čistý HTML kód, žádný okolní text ani markdown záhlaví.";
+          const fullPrompt = systemPrompt + "\n\nZadání uživatele: " + promptText;
+
+          fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: fullPrompt }] }]
+            })
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (!data.candidates || !data.candidates[0]) {
+              console.error("Chyba z Gemini API:", JSON.stringify(data));
+              process.exit(1);
+            }
+            let code = data.candidates[0].content.parts[0].text;
+            code = code.replace(/^```html\s*/i, "").replace(/```\s*$/i, "").trim();
+            fs.writeFileSync("www/index.html", code);
+            console.log("Kód byl úspěšně vygenerován AI!");
+          })
+          .catch(err => {
+            console.error("Chyba při volání API:", err);
+            process.exit(1);
+          });
+          '
+
       - name: Build Android APK
         run: |
           if [ ! -f package.json ]; then
@@ -30,21 +78,6 @@ jobs:
 
           npm install @capacitor/core@6 @capacitor/android@6
           npm install -D @capacitor/cli@6
-
-          mkdir -p www
-          cat << 'EOF' > www/index.html
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Moje Appka</title>
-          </head>
-          <body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;background:#111;color:#fff;">
-            <h1>Aplikace funguje! 🚀</h1>
-          </body>
-          </html>
-          EOF
 
           npx cap init KalorieApp com.kalorie.app --web-dir www
           npx cap add android
@@ -58,5 +91,5 @@ jobs:
         run: |
           curl -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
                -F document=@"android/app/build/outputs/apk/debug/app-debug.apk" \
-               -F caption="🚀 Tvé APK je hotové!" \
+               -F caption="🚀 Tvá AI aplikace je hotová!" \
                "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendDocument"
