@@ -46,7 +46,7 @@ jobs:
           const systemPrompt = "Jsi špičkový mobilní vývojář. Vytvoř kompletní jednosouborovou HTML/JS/CSS webovou aplikaci podle zadání uživatele. Kód musí být plně funkční, moderní, s pěkným designem. Vracej POUZE čistý HTML kód, žádný okolní text ani markdown záhlaví.";
           const fullPrompt = systemPrompt + "\n\nZadání uživatele: " + promptText;
 
-          fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey, {
+          fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
